@@ -35,6 +35,7 @@ testing <- src_training[-inTrain,]
 
 Before training the model, we will review the data. Using the below 3 functions in conjunction with the research description on the above website, we can conclude that the original training set is composed of 19,622 observations with 160 variables, including the variable "classe", which is the dependant variable we will want to predict in a classification exercise. 
 ```{r features, echo=FALSE, message=FALSE} 
+dim(src_training)
 str(src_training)
 summary(src_training)
 sum(complete.cases(src_training))
@@ -71,16 +72,20 @@ We're doing a classification exercise, so blablabla:
 
 ```{r train, echo=TRUE}
 set.seed(1977)
-m <- train(classe ~ ., method = "rpart", preProcess = c("center","scale"), data = training)
-m
-m$modelType
-m$method
-m$finalModel
-m$modelInfo
+
 m1 <- train(classe ~ ., method = "rpart", preProcess = c("center","scale"), data = training)
 m2 <- train(classe ~ ., method = "rf", preProcess = c("center","scale"), data = training)
 m3 <- train(classe ~ ., method = "gbm", preProcess = c("center","scale"), data = training)
 
+m1$modelType; m2$modelType; m3$modelType
+
+p1 <- predict(m1, testing); p2 <- predict(m2, testing); p3 <- predict(m3, testing)
+
+a1 <- confusionMatrix(testing$classe,p1)
+a2 <- confusionMatrix(testing$classe,p2)
+a3 <- confusionMatrix(testing$classe,p3)
+
+round(a1$overall[[1]],2); round(a2$overall[[1]],2); round(a3$overall[[1]],2)
 ```
 **comment on the result**
 
@@ -88,20 +93,8 @@ m3 <- train(classe ~ ., method = "gbm", preProcess = c("center","scale"), data =
 
 some stuff.
 
-```{r prediction, echo=TRUE, fig.height=2,fig.width=6,message=FALSE} 
+```{r prediction, echo=TRUE, message=FALSE} 
 set.seed(1977)
 p <- predict(m, newdata = testing)
-summary(predictions)
-p1 <- predict(m1, testing); p2 <- predict(m2, testing); p3 <- predict(m3, testing)
-p_df <- data.frame(p1, p2, p3, classe = testing$classe)
-combined_m <- train(classe ~ ., method = "rf", data = p_df)
-combined_p <- predict(combined_m, p_df)
-
-a1 <- confusionMatrix(testing$classe,p1)
-a2 <- confusionMatrix(testing$classe,p2)
-a3 <- confusionMatrix(testing$classe,p3)
-ac <- confusionMatrix(testing$classe,combined_p)
-
-round(a1$overall[[1]],2); round(a2$overall[[1]],2); round(a3$overall[[1]],2)
-round(ac$overall[[1]],2)
+summary(p)
 ```
