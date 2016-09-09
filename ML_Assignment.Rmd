@@ -1,17 +1,18 @@
 --- 
 title: "Predicting the right class of exercise" 
 author: "Fabrice Zangl" 
-date: "September 6, 2016" 
+date: "September 9, 2016" 
 output: 
   html_document:
     keep_md: true
 ---
 ## Introduction 
-The objective of this project is to predict the class of a physical exercise. The physical exercise is to lift a weight. The class of the phyiscal exercise is the way in which the exercise is executed, which can be correct or with some form of error. The actual class of the physical exercise should be predicted by the measurements of the accelerometers. The accelerometers were located on 4 spots ( belt, forearm, arm, and dumbell) of 6 participants. 
+The objective of this project is to predict the class of a physical exercise. 
+The physical exercise is to lift a weight. The class of the phyiscal exercise is the way in which the exercise is executed, which can be correct or with some form of error. The actual class of the physical exercise should be predicted by the measurements of the accelerometers. The accelerometers were located on 4 spots ( belt, forearm, arm, and dumbell) of 6 participants. 
 This could for instance be used to support an automatic training coach. Such a digital coach would make suggestions on how to correct the movements to correctly execute the weight lifting exercise, for instance to avoid injuries. Of course, we would want the digital coach to correctly identify the wrong move, so that it wouldn't give wrong advice, possibly increasing the risk of injury.
 
 ## Data Gathering and Partitioning
-Further details and description about the data can be found on the website describing the research experiment: http://groupware.les.inf.puc-rio.br/har. We will now first gather the data from the links provided in the assignment:
+Further details and description about the data can be found on the website describing the research experiment: <http://groupware.les.inf.puc-rio.br/har>. We will now first gather the data from the links provided in the assignment:
 ```{r get_data, echo=TRUE}
 #setwd("C:/Users/zangl.f/Box Sync/private/Coursera/Data Science/Data Scientist Specialization/08 Practical Machine Learning")
 url_training <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
@@ -22,8 +23,8 @@ download.file(url_validation, "assignment_validation.csv")
 validation <- read.csv("assignment_validation.csv")
 ```
 
-The 20 observations in the testing file were stored in the data frame named 'validation'. For the training and testing of the different model options, we therefore need to further partition the original training data into a training and a testing set.
-```{r partition_data, echo=TRUE, fig.height=3,fig.width=3,message=FALSE} 
+The 20 observations in the "pml-testing.csv" file were stored in the data frame named 'validation'. For the training and testing of the different model options, we therefore need to further partition the original training data into a training and a testing set. With the testing set, we will be able to evaluate the out-of-sample error of the different models we want to evaluate.
+```{r partition_data, echo=TRUE, message=FALSE, results="hide"} 
 set.seed(1977)
 if(!require(caret)) {install.packages("caret"); require(caret)}
 inTrain <- createDataPartition(y = src_training$classe, p = 0.75, list = F)
@@ -33,20 +34,20 @@ testing <- src_training[-inTrain,]
 
 ## Feature selection & Pre-Processing
 
-Before training the model, we will review the data. Using the below 3 functions in conjunction with the research description on the above website, we can conclude that the original training set is composed of 19,622 observations with 160 variables, including the variable "classe", which is the dependant variable we will want to predict in a classification exercise. 
-```{r features, echo=FALSE, message=FALSE} 
+Before training the model, we will review the data. Using the below 4 functions in conjunction with the research description on the above website, we can conclude that the original training set is composed of 19,622 observations with 160 variables, including the variable "classe", which is the dependant variable we will want to predict in a classification exercise. 
+```{r features, echo=FALSE, message=FALSE, results="hide"} 
 dim(src_training)
 str(src_training)
 summary(src_training)
 sum(complete.cases(src_training))
 ```
 
-We will therefore need to exclude it from the training set, as well as the record ID and the name of the subject. The model could include the possibility to recognize a pattern in which a certain subject is more likely to make certain type of errors. However, given the nature of the experiment described, we will assume that this is not the case.
-We can notice that many variables have many 'N/A' values. Actually, out of these observations, only 406 have a value for each variable. All these variables actually reflect summarizing values (maximum, minimum, average, amplitude, variance, skewness, kurtosis, standard deviation) of time windows. 
+We will therefore need to exclude the "classe" variable from the training set, as well as the record ID and the name of the subject. The model could include the possibility to recognize a pattern in which a certain subject is more likely to make certain type of errors. However, given the nature of the experiment described, we will assume that this is not the case.
+We can notice that many variables have many 'N/A' values. Actually, out of these observations, only 406 have a value for each variable. All these variables reflect summarizing values (maximum, minimum, average, amplitude, variance, skewness, kurtosis, standard deviation) of time windows. 
 We will exclude these, as we won't have these features available for any given observations, notably those of the validation set.
 We will also exclude any time related feature, as the duration of the exercise, the time window they belong to or the time it took place is irrelevant to the error in executing the exercise.
 Lastly, we will need to apply the feature selection to all 3 datasets. For now, we will leave 'classe' as part of the datasets and remove it when needed. The other variables are simply removed from the datasets as follows:
-```{r feature_selection, echo=FALSE, message=FALSE} 
+```{r feature_selection, echo=FALSE, message=FALSE, results="hide"} 
 sub_index <- grep("^(X|user_name|raw_timestamp_part_|cvtd_timestamp|new_window|num_window|kurtosis_|skewness_|max_|min_|amplitude_|var_|avg_|stddev_|var_)",colnames(training))
 training <- training[,-sub_index]
 testing <- testing[,-sub_index]
@@ -54,47 +55,40 @@ validation <- validation[,-sub_index]
 ```
 Note that the validation dataset also as 53 variables. Although it doesn't have a classe defined, the last column includes the problem ID.
 
-Before training the model, we will review the data. :
-```{r feature_assessment, echo=TRUE, fig.height=2,fig.width=6,message=FALSE} 
-M <- abs(cor(training[,-53]))
-diag(M) <- 0
-which(M > .8, arr.ind = T)
-#pairs(training[,-53])
-#featurePlot(x=training,y = training$classe, plot  ="pairs")
-#my_plot <- qplot(age,wage,colour=jobclass,data=training_plot)
-#my_plot + geom_smooth(method="lm", formula = y~x)
-```
-
-**comment on the result**
-
 ## Model selection & training, including pre-rocessing
-We're doing a classification exercise, so blablabla:
+We're doing a classification exercise, and will therefore try 3 different methods better suited for classification, Decision Tree (rpart), Generalized Boosted Regression and Random Forest. We will consider an accuracy of .97 sufficient.
+We will also reduce the cross-validation to 4, in order to reduce our out of sample error rate.
 
 ```{r train, echo=TRUE}
 set.seed(1977)
-
-m1 <- train(classe ~ ., method = "rpart", preProcess = c("center","scale"), data = training)
-m2 <- train(classe ~ ., method = "rf", preProcess = c("center","scale"), data = training)
-m3 <- train(classe ~ ., method = "gbm", preProcess = c("center","scale"), data = training)
+corM <- cor(training[,-53])
+trControl <- trainControl(method = "cv", number = 4)
+m1 <- train(classe ~ ., method = "rpart", trControl = trControl, data = training)
+m2 <- train(classe ~ ., method = "rf", trControl = trControl, data = training)
+m3 <- train(classe ~ ., method = "gbm", trControl = trControl, data = training)
 
 m1$modelType; m2$modelType; m3$modelType
-
-p1 <- predict(m1, testing); p2 <- predict(m2, testing); p3 <- predict(m3, testing)
+```
+We will select the model to use on the validation, based on the model that has the lowest out-of-sample error. 
+```{r oose, echo=TRUE}
+p1 <- predict(m1, testing); p2 <- predict(m2, testing); 
+p3 <- predict(m3, testing)
 
 a1 <- confusionMatrix(testing$classe,p1)
 a2 <- confusionMatrix(testing$classe,p2)
 a3 <- confusionMatrix(testing$classe,p3)
 
-round(a1$overall[[1]],2); round(a2$overall[[1]],2); round(a3$overall[[1]],2)
+round(a1$overall[[1]],3); round(a2$overall[[1]],3);
+round(a3$overall[[1]],3)
 ```
-**comment on the result**
+**The outcome confirms that all 3 models are classification models. Out of the 3 models, that Random Forest is the best performing model, with an out of sample rate of 0.997, which is more than enough in terms of accuracy. Hence, we won't need to stack our models to increase performance further and we can choose the Random Forest model 'm2' as the model we use to predict the classes for the validation set to use in the final quiz.**
 
-## Prediction
+## Prediction & conclusion
 
-some stuff.
+Based on the model assessment conducted above, we will use m2 to predict the classes for the validation set we use in the quiz 4. Below are the results of the prediction, with which the quiz could be completed with 100%.
 
 ```{r prediction, echo=TRUE, message=FALSE} 
 set.seed(1977)
-p <- predict(m, newdata = testing)
-summary(p)
+p <- predict(m2, newdata = validation)
+p
 ```
