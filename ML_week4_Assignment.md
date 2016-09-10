@@ -73,6 +73,21 @@ We will therefore start to look into the prediction using the **training** set, 
 
 ```r
 m1$modelType; m2$modelType; m3$modelType
+```
+
+```
+## [1] "Classification"
+```
+
+```
+## [1] "Classification"
+```
+
+```
+## [1] "Classification"
+```
+
+```r
 i1 <- predict(m1, training[,-53]); i2 <- predict(m2, training[,-53]); i3 <- predict(m3, training[,-53])
 
 RE_1 <- confusionMatrix(training$classe,i1)
@@ -80,6 +95,18 @@ RE_2 <- confusionMatrix(training$classe,i2)
 RE_3 <- confusionMatrix(training$classe,i3)
 
 1-round(RE_1$overall[[1]],3); 1-round(RE_2$overall[[1]],3);1-round(RE_3$overall[[1]],3)
+```
+
+```
+## [1] 0.506
+```
+
+```
+## [1] 0
+```
+
+```
+## [1] 0.026
 ```
 
 We will select the model to use on the validation (the quiz), the actual out of sample, based on the model that has the lowest **estimated** out-of-sample error. Note, the testing data was part of the initial src_training set that we partitioned and is therefore actually part of the sample. However, it is the one we use to estimate what the out of sample error will be. To do so, we apply the models we have trained on the **testing** set.
@@ -93,6 +120,18 @@ a3 <- confusionMatrix(testing$classe,p3)
 
 1-round(a1$overall[[1]],3); 1-round(a2$overall[[1]],3);1-round(a3$overall[[1]],3)
 ```
+
+```
+## [1] 0.498
+```
+
+```
+## [1] 0.005
+```
+
+```
+## [1] 0.033
+```
 **Firstly, we can compare the estimated out of sample error to the in sample error. We can see that for the Decision Tree (m1) the is not only very high, but also bigger than the estimated out of sample error. This tells us that we should already exclude m1 from our options. The 2 other models have as expected estimated out of sample errors that are higher than the in sample error.**
 **Out of the 3 models, that Random Forest is the best performing model, with an out of sample error rate of 0.003, which is more than enough in terms of accuracy for the quiz. Hence, we won't need to stack our models to increase performance further and we can choose the Random Forest model 'm2' as the model we use to predict the classes for the validation set to use in the final quiz.**
 
@@ -105,4 +144,9 @@ Based on the model assessment conducted above, we will use m2 to predict the cla
 set.seed(1977)
 p <- predict(m2, newdata = validation[,-53])
 p
+```
+
+```
+##  [1] B A B A A E D B A A B C B A E E A B B B
+## Levels: A B C D E
 ```

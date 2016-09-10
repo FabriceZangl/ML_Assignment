@@ -6,7 +6,7 @@ output:
   html_document:
     keep_md: yes
 ---
-## Introduction 
+## Introduction  
 The objective of this project is to predict the class of a physical exercise. 
 The physical exercise is to lift a weight. The class of the phyiscal exercise is the way in which the exercise is executed, which can be correct or with some form of error. The actual class of the physical exercise should be predicted by the measurements of the accelerometers. The accelerometers were located on 4 spots ( belt, forearm, arm, and dumbell) of 6 participants. 
 This could for instance be used to support an automatic training coach. Such a digital coach would make suggestions on how to correct the movements to correctly execute the weight lifting exercise, for instance to avoid injuries. Of course, we would want the digital coach to correctly identify the wrong move, so that it wouldn't give wrong advice, possibly increasing the risk of injury.
